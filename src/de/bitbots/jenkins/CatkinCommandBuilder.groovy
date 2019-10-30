@@ -4,7 +4,7 @@ package de.bitbots.jenkins;
 class CatkinCommandBuilder implements Serializable {
 
     static String linkWorkspace(String workspace) {
-        return String.format("ln -s %s /catkin_ws/src", workspace);
+        return String.format("ln -s '%s' /catkin_ws/src", workspace);
     }
 
     static String build(String makeTarget) {
