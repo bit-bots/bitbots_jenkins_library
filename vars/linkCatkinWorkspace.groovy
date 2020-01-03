@@ -1,5 +1,3 @@
-import de.bitbots.jenkins.CatkinCommandBuilder
-
 def call() {
-    sh CatkinCommandBuilder.linkWorkspace(WORKSPACE)
+    sh "ln -s '${WORKSPACE}' /catkin_ws/src"
 }
