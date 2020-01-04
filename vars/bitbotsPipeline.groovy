@@ -12,12 +12,7 @@ def pullContainer() {
 def buildPackage(PackageDefinition p) {
     sh "ln -s ${WORKSPACE}/${p.relativePath} /catkin_ws/src/${p.name}"
     sh "cd /catkin_ws; rosdep install -y -i /catkin_ws/src -i /srv/catkin_install --from-paths /catkin_ws/src/${p.name}"
-    sh """
-        #!/bin/bash
-        cd /catkin_ws
-        source devel/setup.bash
-        catkin build --no-status --summarize ${p.name}
-"""
+    sh "cd /catkin_ws; catkin build --no-status --summarize ${p.name}"
 
     dir("/catkin_ws/install") {
         stash {
