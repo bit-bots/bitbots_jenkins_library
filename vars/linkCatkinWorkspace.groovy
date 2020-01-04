@@ -1,3 +1,3 @@
-def call() {
-    sh "ln -s '${WORKSPACE}' /catkin_ws/src"
+def call(String p) {
+    sh "ln -s ${WORKSPACE}/${p} /catkin_ws/src/${p}"
 }
