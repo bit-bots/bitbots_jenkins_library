@@ -10,9 +10,9 @@ def pullContainer() {
 }
 
 def buildPackage(PackageDefinition p) {
-    sh "ln -s ${WORKSPACE}/${p.relativePath} /catkin_ws/src/${p.name}"
-    sh "cd /catkin_ws; rosdep install -y -i /catkin_ws/src -i /srv/catkin_install --from-paths /catkin_ws/src/${p.name}"
-    sh "cd /catkin_ws; catkin build --no-status --summarize ${p.name}"
+    linkCatkinWorkspace(p.relativePath)
+    installRosdeps(p.relativePath)
+    catkinBuild(p.name)
 
     dir("/catkin_ws/install") {
         stash {
@@ -24,7 +24,7 @@ def buildPackage(PackageDefinition p) {
 
 Closure buildPackageInStage(PackageDefinition p) {
     return {
-        stage("Build ${p.name}") {
+        stage("Build package ${p.name}") {
             //warnError("Package ${p.name} failed to build") {
                 timeout(30) {
                     withDockerContainer(
