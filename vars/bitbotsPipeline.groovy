@@ -76,11 +76,15 @@ Closure deployDocsInStage(PackageDefinition p) {
     return {
         stage("Deploy docs ${p.name}") {
             unstash("${p.name}_docs")
-            deployDocs(p.name, "latest", p.relativePath)
             publishHTML(allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportTitles: "",
                     reportDir: "${p.relativePath}/docs/_out/",
                     reportFiles: "index.html",
                     reportName: "${p.name} Documentation")
+
+            if (env.BRANCH_NAME == "master")
+                deployDocs(p.name, "latest", p.relativePath)
+            else
+                echo "Skipped webserver deployment because branch is not master"
         }
     }
 }
