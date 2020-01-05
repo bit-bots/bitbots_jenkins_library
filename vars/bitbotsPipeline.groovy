@@ -25,8 +25,11 @@ def installPackage(PackageDefinition p) {
 
 def documentPackage(PackageDefinition p) {
     linkCatkinWorkspace(p.relativePath)
-    catkinClean()
+    installRosdeps(p.relativePath)
     catkinBuild(p.name, "Documentation")
+    dir("${WORKSPACE}") {
+        stash(name: "${p.name}_docs", includes: "${p.relativePath}/docs/_out/**")
+    }
 }
 
 Closure buildPackageInStage(PackageDefinition p) {
@@ -38,7 +41,6 @@ Closure buildPackageInStage(PackageDefinition p) {
                         image: BITBOTS_BUILDER_IMAGE,
                         args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:ro") {
                     buildPackage(p)
-                    cleanWs()
                 }
             }
             //}
@@ -53,7 +55,6 @@ Closure installPackageInStage(PackageDefinition p) {
                     image: BITBOTS_BUILDER_IMAGE,
                     args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:rw") {
                 installPackage(p)
-                cleanWs()
             }
         }
     }
@@ -61,13 +62,25 @@ Closure installPackageInStage(PackageDefinition p) {
 
 Closure documentPackageInStage(PackageDefinition p) {
     return {
-        stage("Document package ${p.name}") {
+        stage("Build docs ${p.name}") {
             withDockerContainer(
                     image: BITBOTS_BUILDER_IMAGE,
                     args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:rw") {
                 documentPackage(p)
-                cleanWs()
             }
+        }
+    }
+}
+
+Closure deployDocsInStage(PackageDefinition p) {
+    return {
+        stage("Deploy docs ${p.name}") {
+            unstash("${p.name}_docs")
+            deployDocs(p.name, "latest", p.relativePath)
+            publishHTML(allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportTitles: "",
+                    reportDir: "${p.relativePath}/docs/_out/",
+                    reportFiles: "index.html",
+                    reportName: "${p.name} Documentation")
         }
     }
 }
@@ -76,11 +89,14 @@ def call(PackageDefinition[] packages) {
     Map<String, Closure> buildClosures = new HashMap<>()
     Map<String, Closure> documentClosures = new HashMap<>()
     Map<String, Closure> installClosures = new HashMap<>()
+    Map<String, Closure> deployDocsClosures = new HashMap<>()
 
     for (int i = 0; i < packages.length; i++) {
         buildClosures.put(packages[i].name, buildPackageInStage(packages[i]))
-        if (packages[i].document)
+        if (packages[i].document) {
             documentClosures.put(packages[i].name, documentPackageInStage(packages[i]))
+            deployDocsClosures.put(packages[i].name, deployDocsInStage(packages[i]))
+        }
         installClosures.put(packages[i].name, installPackageInStage(packages[i]))
     }
 
@@ -91,5 +107,9 @@ def call(PackageDefinition[] packages) {
         parallel(documentClosures)
         parallel(installClosures)
         cleanWs()
+    }
+
+    node("webserver") {
+        parallel(deployDocsClosures)
     }
 }
