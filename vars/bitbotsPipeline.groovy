@@ -2,7 +2,7 @@ import de.bitbots.jenkins.PackageDefinition
 import groovy.transform.Field
 
 @Field
-def BITBOTS_BUILDER_IMAGE = "registry.bit-bots.de:5000/bitbots_builder"
+def BITBOTS_BUILDER_IMAGE = "registry.bit-bots.de/bitbots_builder"
 
 def pullContainer() {
     sh "docker pull ${BITBOTS_BUILDER_IMAGE}"
