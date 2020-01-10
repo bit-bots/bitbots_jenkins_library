@@ -28,7 +28,11 @@ def documentPackage(PackageDefinition p) {
     installRosdeps(p.relativePath)
     catkinBuild(p.name, "Documentation")
     dir("${WORKSPACE}") {
-        stash(name: "${p.name}_docs", includes: "${p.relativePath}/docs/_out/**")
+        if (p.relativePath == ".") {
+            stash(name: "${p.name}_docs", includes: "docs/_out/**")
+        } else {
+            stash(name: "${p.name}_docs", includes: "${p.relativePath}/docs/_out/**")
+        }
     }
 }
 
