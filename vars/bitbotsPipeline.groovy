@@ -54,7 +54,7 @@ Closure buildPackageInStage(PackageDefinition p) {
 
 Closure installPackageInStage(PackageDefinition p) {
     return {
-        stage("Install pacakge ${p.name}") {
+        stage("Install package ${p.name}") {
             withDockerContainer(
                     image: BITBOTS_BUILDER_IMAGE,
                     args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:rw") {
