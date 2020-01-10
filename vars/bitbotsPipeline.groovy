@@ -10,21 +10,21 @@ def pullContainer() {
 }
 
 def buildPackage(PackageDefinition p) {
-    linkCatkinWorkspace(p.relativePath)
+    linkCatkinWorkspace(p.name, p.relativePath)
     installRosdeps(p.relativePath)
     catkinClean()
     catkinBuild(p.name)
 }
 
 def installPackage(PackageDefinition p) {
-    linkCatkinWorkspace(p.relativePath)
+    linkCatkinWorkspace(p.name, p.relativePath)
     installRosdeps(p.relativePath)
     catkinClean()
     catkinInstall(p.name)
 }
 
 def documentPackage(PackageDefinition p) {
-    linkCatkinWorkspace(p.relativePath)
+    linkCatkinWorkspace(p.name, p.relativePath)
     installRosdeps(p.relativePath)
     catkinBuild(p.name, "Documentation")
     dir("${WORKSPACE}") {
