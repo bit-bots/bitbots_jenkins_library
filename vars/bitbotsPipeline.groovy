@@ -99,18 +99,21 @@ def doPipelineForPackage(PackageDefinition pd) {
 }
 
 def call(PackageDefinition[] packages) {
-    Map<String, Closure> buildClosures = new HashMap<String, Closure>()
-    Map<String, Closure> webServerClosures = new HashMap<String, Closure>()
-
-    for (int i = 0; i < packages.length; i++) {
-        PackageDefinition pd = packages[i]
-        buildClosures.put(packages[i].name, {doPipelineForPackage(pd)})
-        webServerClosures.put(packages[i].name, { deployDocsInStage(pd) })
-    }
-
     node {
-        checkout(scm)
-        pullContainer()
+        Map<String, Closure> buildClosures = new HashMap<String, Closure>()
+        Map<String, Closure> webServerClosures = new HashMap<String, Closure>()
+
+        stage("Pre: SCM, Docker, Pipeline Construction") {
+            for (int i = 0; i < packages.length; i++) {
+                PackageDefinition pd = packages[i]
+                buildClosures.put(packages[i].name, { doPipelineForPackage(pd) })
+                webServerClosures.put(packages[i].name, { deployDocsInStage(pd) })
+            }
+
+            checkout(scm)
+            pullContainer()
+        }
+
         parallel(buildClosures)
         cleanWs()
     }
