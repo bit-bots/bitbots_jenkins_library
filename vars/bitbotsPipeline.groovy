@@ -99,10 +99,10 @@ def doPipelineForPackage(PackageDefinition pd) {
 }
 
 def call(PackageDefinition[] packages) {
-    node {
-        Map<String, Closure> buildClosures = new HashMap<String, Closure>()
-        Map<String, Closure> webServerClosures = new HashMap<String, Closure>()
+    Map<String, Closure> buildClosures = new HashMap<String, Closure>()
+    Map<String, Closure> webServerClosures = new HashMap<String, Closure>()
 
+    node {
         stage("Pre: SCM, Docker, Pipeline Construction") {
             for (int i = 0; i < packages.length; i++) {
                 PackageDefinition pd = packages[i]
