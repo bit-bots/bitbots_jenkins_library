@@ -86,7 +86,7 @@ def deployDocsInStage(PackageDefinition p) {
 }
 
 def doPipelineForPackage(PackageDefinition pd) {
-    catchError(buildResult: null, stageResult: "NOT_BUILT") {
+    catchError(message: "Pipeline for ${pd.name} failed", buildResult: "FAILURE", stageResult: "FAILURE") {
         buildPackageInStage(pd)
         if (pd.document) {
             documentPackageInStage(pd)
