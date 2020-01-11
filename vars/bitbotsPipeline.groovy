@@ -36,88 +36,86 @@ def documentPackage(PackageDefinition p) {
     }
 }
 
-Closure buildPackageInStage(PackageDefinition p) {
-    return {
-        stage("Build package ${p.name}") {
-            //warnError("Package ${p.name} failed to build") {
-            timeout(30) {
-                withDockerContainer(
-                        image: BITBOTS_BUILDER_IMAGE,
-                        args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:ro") {
-                    buildPackage(p)
-                }
-            }
-            //}
-        }
-    }
-}
-
-Closure installPackageInStage(PackageDefinition p) {
-    return {
-        stage("Install package ${p.name}") {
+def buildPackageInStage(PackageDefinition p) {
+    stage("Build package ${p.name}") {
+        //warnError("Package ${p.name} failed to build") {
+        timeout(30) {
             withDockerContainer(
                     image: BITBOTS_BUILDER_IMAGE,
-                    args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:rw") {
-                installPackage(p)
+                    args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:ro") {
+                buildPackage(p)
             }
+        }
+        //}
+    }
+}
+
+def installPackageInStage(PackageDefinition p) {
+    stage("Install package ${p.name}") {
+        withDockerContainer(
+                image: BITBOTS_BUILDER_IMAGE,
+                args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:rw") {
+            installPackage(p)
         }
     }
 }
 
-Closure documentPackageInStage(PackageDefinition p) {
-    return {
-        stage("Build docs ${p.name}") {
-            withDockerContainer(
-                    image: BITBOTS_BUILDER_IMAGE,
-                    args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:rw") {
-                documentPackage(p)
-            }
+def documentPackageInStage(PackageDefinition p) {
+    stage("Build docs ${p.name}") {
+        withDockerContainer(
+                image: BITBOTS_BUILDER_IMAGE,
+                args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:rw") {
+            documentPackage(p)
         }
     }
 }
 
-Closure deployDocsInStage(PackageDefinition p) {
-    return {
-        stage("Deploy docs ${p.name}") {
-            unstash("${p.name}_docs")
-            publishHTML(allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportTitles: "",
-                    reportDir: "${p.relativePath}/docs/_out/",
-                    reportFiles: "index.html",
-                    reportName: "${p.name} Documentation")
+def deployDocsInStage(PackageDefinition p) {
+    stage("Deploy docs ${p.name}") {
+        unstash("${p.name}_docs")
+        publishHTML(allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportTitles: "",
+                reportDir: "${p.relativePath}/docs/_out/",
+                reportFiles: "index.html",
+                reportName: "${p.name} Documentation")
 
-            if (env.BRANCH_NAME == "master")
-                deployDocs(p.name, "latest", p.relativePath)
-            else
-                echo "Skipped webserver deployment because branch is not master"
+        if (env.BRANCH_NAME == "master")
+            deployDocs(p.name, "latest", p.relativePath)
+        else
+            echo "Skipped webserver deployment because branch is not master"
+    }
+}
+
+def doPipelineForPackage(PackageDefinition pd) {
+    catchError(buildResult: null, stageResult: "NOT_BUILT") {
+        buildPackageInStage(pd)
+        if (pd.document) {
+            documentPackageInStage(pd)
         }
+        if (env.BRANCH_NAME == "master")
+            installPackageInStage(pd)
+        else
+            echo "Skipped package installation because branch is not master"
     }
 }
 
 def call(PackageDefinition[] packages) {
-    Map<String, Closure> buildClosures = new HashMap<>()
-    Map<String, Closure> documentClosures = new HashMap<>()
-    Map<String, Closure> installClosures = new HashMap<>()
-    Map<String, Closure> deployDocsClosures = new HashMap<>()
+    Map<String, Closure> buildClosures = new HashMap<String, Closure>()
+    Map<String, Closure> webServerClosures = new HashMap<String, Closure>()
 
     for (int i = 0; i < packages.length; i++) {
-        buildClosures.put(packages[i].name, buildPackageInStage(packages[i]))
-        if (packages[i].document) {
-            documentClosures.put(packages[i].name, documentPackageInStage(packages[i]))
-            deployDocsClosures.put(packages[i].name, deployDocsInStage(packages[i]))
-        }
-        installClosures.put(packages[i].name, installPackageInStage(packages[i]))
+        PackageDefinition pd = packages[i]
+        buildClosures.put(packages[i].name, {doPipelineForPackage(pd)})
+        webServerClosures.put(packages[i].name, { deployDocsInStage(pd) })
     }
 
     node {
         checkout(scm)
         pullContainer()
         parallel(buildClosures)
-        parallel(documentClosures)
-        parallel(installClosures)
         cleanWs()
     }
 
     node("webserver") {
-        parallel(deployDocsClosures)
+        parallel(webServerClosures)
     }
 }
