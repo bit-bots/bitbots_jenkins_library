@@ -52,10 +52,12 @@ def buildPackageInStage(PackageDefinition p) {
 
 def installPackageInStage(PackageDefinition p) {
     stage("Install package ${p.name}") {
-        withDockerContainer(
-                image: BITBOTS_BUILDER_IMAGE,
-                args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:rw") {
-            installPackage(p)
+        imperativeWhen(env.BRANCH_NAME == "master") {
+            withDockerContainer(
+                    image: BITBOTS_BUILDER_IMAGE,
+                    args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:rw") {
+                installPackage(p)
+            }
         }
     }
 }
@@ -78,10 +80,9 @@ def deployDocsInStage(PackageDefinition p) {
                 reportFiles: "index.html",
                 reportName: "${p.name} Documentation")
 
-        if (env.BRANCH_NAME == "master")
+        imperativeWhen(env.BRANCH_NAME == "master") {
             deployDocs(p.name, "latest", p.relativePath)
-        else
-            echo "Skipped webserver deployment because branch is not master"
+        }
     }
 }
 
@@ -91,10 +92,7 @@ def doPipelineForPackage(PackageDefinition pd) {
         if (pd.document) {
             documentPackageInStage(pd)
         }
-        if (env.BRANCH_NAME == "master")
-            installPackageInStage(pd)
-        else
-            echo "Skipped package installation because branch is not master"
+        installPackageInStage(pd)
     }
 }
 
