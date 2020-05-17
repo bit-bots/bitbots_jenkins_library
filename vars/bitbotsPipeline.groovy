@@ -102,6 +102,8 @@ def call(PackageDefinition[] packages) {
     Map<String, Closure> buildClosures = new HashMap<String, Closure>()
     Map<String, Closure> webServerClosures = new HashMap<String, Closure>()
 
+    properties([pipelineTriggers([cron('H 7 * * 1')])])
+
     node {
         stage("Pre: SCM, Docker, Pipeline Construction") {
             for (int i = 0; i < packages.length; i++) {
