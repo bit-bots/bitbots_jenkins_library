@@ -1,13 +1,4 @@
 import de.bitbots.jenkins.PackageDefinition
-import groovy.transform.Field
-
-@Field
-def BITBOTS_BUILDER_IMAGE = "registry.bit-bots.de/bitbots_builder"
-
-def pullContainer() {
-    sh "docker pull ${BITBOTS_BUILDER_IMAGE}"
-    sh "docker inspect -f . ${BITBOTS_BUILDER_IMAGE}"  // Fails if non-existent
-}
 
 def buildPackage(PackageDefinition p) {
     linkCatkinWorkspace(p.name, p.relativePath)
@@ -40,9 +31,7 @@ def buildPackageInStage(PackageDefinition p) {
     stage("Build package ${p.name}") {
         //warnError("Package ${p.name} failed to build") {
         timeout(30) {
-            withDockerContainer(
-                    image: BITBOTS_BUILDER_IMAGE,
-                    args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:ro") {
+            container("builder") {
                 buildPackage(p)
             }
         }
@@ -52,10 +41,8 @@ def buildPackageInStage(PackageDefinition p) {
 
 def installPackageInStage(PackageDefinition p) {
     stage("Install package ${p.name}") {
-        imperativeWhen(env.BRANCH_NAME == "master") {
-            withDockerContainer(
-                    image: BITBOTS_BUILDER_IMAGE,
-                    args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:rw") {
+        imperativeWhen(env.CHANGEID == null) {
+            container("builder") {
                 installPackage(p)
             }
         }
@@ -64,9 +51,7 @@ def installPackageInStage(PackageDefinition p) {
 
 def documentPackageInStage(PackageDefinition p) {
     stage("Build docs ${p.name}") {
-        withDockerContainer(
-                image: BITBOTS_BUILDER_IMAGE,
-                args: "--volume /srv/shared_catkin_install_space:/srv/catkin_install:rw") {
+        container("builder") {
             documentPackage(p)
         }
     }
@@ -80,7 +65,7 @@ def deployDocsInStage(PackageDefinition p) {
                 reportFiles: "index.html",
                 reportName: "${p.name} Documentation")
 
-        imperativeWhen(env.BRANCH_NAME == "master") {
+        imperativeWhen(env.CHANGE_ID == null) {
             deployDocs(p.name, "latest", p.relativePath)
         }
     }
@@ -100,18 +85,17 @@ def call(PackageDefinition[] packages) {
     Map<String, Closure> buildClosures = new HashMap<String, Closure>()
     Map<String, Closure> webServerClosures = new HashMap<String, Closure>()
 
-    properties([pipelineTriggers([cron('H 7 * * 1')])])
+    //properties([pipelineTriggers([cron('H 7 * * 1')])])
 
-    node {
-        stage("Pre: SCM, Docker, Pipeline Construction") {
+    withKubernetesNode {
+        stage("Pre: SCM, Pipeline Construction") {
             for (int i = 0; i < packages.length; i++) {
                 PackageDefinition pd = packages[i]
-                buildClosures.put(packages[i].name, { doPipelineForPackage(pd) })
-                webServerClosures.put(packages[i].name, { deployDocsInStage(pd) })
+                buildClosures.put(pd.name, { doPipelineForPackage(pd) })
+                webServerClosures.put(pd.name, { deployDocsInStage(pd) })
             }
 
             checkout(scm)
-            pullContainer()
         }
 
         parallel(buildClosures)
