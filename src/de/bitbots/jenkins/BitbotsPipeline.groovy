@@ -113,10 +113,15 @@ spec:
       - cat
 """) {
             this.steps.node(this.env.POD_LABEL) {
-                // checkout
                 this.steps.stage("Pre: Checkout") {
                     this.inBuildContainer {
                         this.checkoutVars = this.steps.checkout(this.scm)
+                    }
+                }
+
+                this.steps.stage("Pre: Update Rosdeps") {
+                    this.inBuildContainer {
+                        this.updateRosdeps()
                     }
                 }
 
@@ -204,6 +209,13 @@ spec:
         this.steps.sh(
                 label: "installRosdeps",
                 script: "rosdep install -y -i --from-paths /catkin_ws/src/${pkg.getName()}"
+        )
+    }
+
+    private void updateRosdeps() {
+        this.steps.sh(
+                label: "updateRosdeps",
+                script: "rosdep update"
         )
     }
 
