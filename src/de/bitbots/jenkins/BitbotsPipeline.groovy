@@ -176,7 +176,7 @@ spec:
     private void linkCatkinWorkspace(PackageDefinition pkg) {
         this.steps.sh(
                 label: "linkCatkinWorkspace",
-                script: "ln -s ${this.env.WORKSPACE}/${pkg.getRelativePath()} /catkin_ws/src/${pkg.getName()}"
+                script: "ln -sf ${this.env.WORKSPACE}/${pkg.getRelativePath()} /catkin_ws/src/${pkg.getName()}"
         )
     }
 
