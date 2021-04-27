@@ -64,7 +64,7 @@ class BitbotsPipeline implements Serializable {
                                     def includes
                                     if (pkgSettings.getPkg().getRelativePath().equals(".")) {
                                         includes = "docs/_out/**"
-                                        this.createArchive("./docs/_out/", "./docs.tar.gz")
+                                        this.createArchive("docs/_out/", "./docs.tar.gz")
                                     } else {
                                         includes = "${pkgSettings.getPkg().getRelativePath()}/docs/_out/**"
                                         this.createArchive("${pkgSettings.getPkg().getRelativePath()}/docs/_out/", "./docs.tar.gz")
@@ -179,10 +179,17 @@ spec:
     }
 
     private void linkCatkinWorkspace(PackageDefinition pkg) {
-        this.steps.sh(
-                label: "linkCatkinWorkspace",
-                script: "ln -sf ${this.env.WORKSPACE}/${pkg.getRelativePath()} /catkin_ws/src/${pkg.getName()}"
-        )
+        if (pkg.getRelativePath().equals(".")) {
+            this.steps.sh(
+                    label: "linkCatkinWorkspace",
+                    script: "ln -sf ${this.env.WORKSPACE}/ /catkin_ws/src/${pkg.getName()}"
+            )
+        } else {
+            this.steps.sh(
+                    label: "linkCatkinWorkspace",
+                    script: "ln -sf ${this.env.WORKSPACE}/${pkg.getRelativePath()} /catkin_ws/src/${pkg.getName()}"
+            )
+        }
     }
 
     private void catkinClean() {
