@@ -168,7 +168,6 @@ spec:
                         gitHubContext: githubContext,
                         account: githubInfo.owner,
                         repo: githubInfo.repo,
-                        sha: this.checkoutVars.GIT_COMMIT
                 ) {
                     body()
                 }
