@@ -203,7 +203,7 @@ spec:
     private void installRosdeps(PackageDefinition pkg) {
         this.steps.sh(
                 label: "installRosdeps",
-                script: "rosdep install -y -i /catkin_ws/src -i /srv/catkin_install --from-paths /catkin_ws/src/${pkg.getName()}"
+                script: "rosdep install -y -i --from-paths /catkin_ws/src/${pkg.getName()}"
         )
     }
 
