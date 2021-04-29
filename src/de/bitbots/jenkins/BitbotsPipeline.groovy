@@ -228,10 +228,12 @@ spec:
     }
 
     private void installRosdeps(PackageDefinition pkg) {
-        this.steps.sh(
-                label: "installRosdeps",
-                script: "rosdep install -y -i --from-paths /catkin_ws/src/${pkg.getName()}"
-        )
+        this.steps.lock("${this.env.BUILD_TAG}_apt") {
+            this.steps.sh(
+                    label: "installRosdeps",
+                    script: "rosdep install -y -i --from-paths /catkin_ws/src/${pkg.getName()}"
+            )
+        }
     }
 
     private void updateRosdeps() {
