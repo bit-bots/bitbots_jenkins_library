@@ -8,6 +8,7 @@ class BitbotsPipeline implements Serializable {
     def currentBuild
     def scm
     def checkoutVars
+    Boolean restrictPublishingToMainBranch;
 
     final Map<String, Closure> buildClosures
 
@@ -21,11 +22,12 @@ class BitbotsPipeline implements Serializable {
         }
     }
 
-    BitbotsPipeline(steps, env, currentBuild, scm) {
+    BitbotsPipeline(steps, env, currentBuild, scm, Boolean restrictPublishingToMainBranch = true) {
         this.steps = steps
         this.env = env
         this.currentBuild = currentBuild
         this.scm = scm
+        this.restrictPublishingToMainBranch = restrictPublishingToMainBranch
 
         this.buildClosures = new HashMap()
     }
@@ -79,7 +81,8 @@ class BitbotsPipeline implements Serializable {
 
                 // documentation publishing on webserver
                 this.withGithubStage("Publish ${pkgSettings.getPkg().getName()}", "publish_${pkgSettings.getPkg().getName()}") {
-                    this.imperativeWhen(pkgSettings.getDoPublish()) {
+                    def shouldRestrict = this.restrictPublishingToMainBranch && this.steps.isPrimaryBranch()
+                    this.imperativeWhen(pkgSettings.getDoPublish() && shouldRestrict) {
                         this.onWebserver {
                             this.steps.unstash("${pkgSettings.getPkg().getName()}_docs")
                             this.steps.dir(pkgSettings.getPkg().getRelativePath()) {

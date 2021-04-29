@@ -6,7 +6,7 @@ class PackagePipelineSettings implements Serializable {
     boolean doDocument
     boolean doPublish
 
-    PackagePipelineSettings(PackageDefinition pkg, boolean doBuild = true, boolean doDocument = false, boolean doPublish = false) {
+    PackagePipelineSettings(PackageDefinition pkg, boolean doBuild = true, boolean doDocument = true, boolean doPublish = true) {
         this.pkg = pkg
         this.doBuild = doBuild
         this.doDocument = doDocument
