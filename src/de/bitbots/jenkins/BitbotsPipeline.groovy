@@ -60,7 +60,6 @@ class BitbotsPipeline implements Serializable {
                             this.steps.timeout(30) {
                                 this.linkCatkinWorkspace(pkgSettings.getPkg())
                                 this.installRosdeps(pkgSettings.getPkg())
-                                this.catkinClean()
                                 this.catkinBuild(pkgSettings.getPkg())
                             }
                         }
@@ -205,13 +204,6 @@ spec:
                     script: "ln -sf ${this.env.WORKSPACE}/${pkg.getRelativePath()} /catkin_ws/src/${pkg.getName()}"
             )
         }
-    }
-
-    private void catkinClean() {
-        this.steps.sh(
-                label: "catkinClean",
-                script: "catkin clean -w /catkin_ws -y"
-        )
     }
 
     private void catkinBuild(PackageDefinition pkg, String makeArgs = "", String profile = "default") {
