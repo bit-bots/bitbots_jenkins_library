@@ -8,7 +8,7 @@ class BitbotsPipeline implements Serializable {
     def currentBuild
     def scm
     def checkoutVars
-    Boolean restrictPublishingToMainBranch;
+    Boolean restrictPublishingToMainBranch
 
     final Map<String, Closure> buildClosures
 
@@ -22,6 +22,18 @@ class BitbotsPipeline implements Serializable {
         }
     }
 
+    /**
+     * Construct a new BitBotsPipeline.
+     * Most of the time it can be constructed like <code>new BitbotsPipeline(this, env, currentBuild, scm)</code>
+     *
+     * @param steps Reference to the current pipeline object which is needed to call Jenkins steps from within the
+     *  pipeline. Should always be <code>this</code>
+     * @param env Pipeline environment. Should always be <code>env</code>
+     * @param currentBuild Jenkins information about the current build. Should always be <code>currentBuild</code>
+     * @param scm Source control information as given by Jenkins. Should always be <code>scm</code>
+     * @param restrictPublishingToMainBranch Whether documentation publishing should automatically be restricted to the
+     *  main branch of the repository regardless of a packages {@link PackagePipelineSettings}
+     */
     BitbotsPipeline(steps, env, currentBuild, scm, Boolean restrictPublishingToMainBranch = true) {
         this.steps = steps
         this.env = env
@@ -35,7 +47,8 @@ class BitbotsPipeline implements Serializable {
     /**
      * Configure this pipeline for a given package.
      *
-     * This does not directly execute the pipeline but instead configures later execution. Call {@link #execute()}
+     * This does not directly execute the pipeline but instead configures later execution.
+     * Call {@link #execute()} to execute the pipeline for all configured packages.
      */
     void configurePipelineForPackage(PackagePipelineSettings pkgSettings) {
         this.buildClosures.put(pkgSettings.getPkg().getName(), {
