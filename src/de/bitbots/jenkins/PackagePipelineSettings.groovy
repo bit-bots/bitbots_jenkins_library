@@ -25,11 +25,13 @@ class PackagePipelineSettings implements Serializable {
 
     PackagePipelineSettings withDocumentation() {
         this.doDocument = true
+        this.doPublish = true
         return this
     }
 
     PackagePipelineSettings withoutDocumentation() {
         this.doDocument = false
+        this.doPublish = false
         return this
     }
 
