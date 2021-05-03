@@ -105,7 +105,7 @@ class BitbotsPipeline implements Serializable {
                     }
                 }
             }
-})
+        })
     }
 
     /**
@@ -224,7 +224,10 @@ spec:
         this.steps.lock("${this.env.BUILD_TAG}_apt") {
             this.steps.sh(
                     label: "installRosdeps",
-                    script: "rosdep install -y -i --from-paths /catkin_ws/src/${pkg.getName()}"
+                    script: """
+                            . /opt/ros/noetic/setup.sh
+                            rosdep install -y -i --from-paths /catkin_ws/src/${pkg.getName()}
+                            """
             )
         }
     }
