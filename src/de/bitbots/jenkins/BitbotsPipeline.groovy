@@ -121,6 +121,7 @@ spec:
   containers:
     - name: builder
       image: registry.bit-bots.de/bitbots_builder
+      imagePullPolicy: Always
       securityContext:
         runAsUser: 0
       tty: true
