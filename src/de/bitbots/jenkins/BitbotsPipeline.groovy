@@ -225,7 +225,7 @@ spec:
             this.steps.sh(
                     label: "installRosdeps",
                     script: """
-                            . /opt/ros/noetic/setup.sh
+                            . /opt/ros/melodic/setup.sh
                             rosdep install -y -i --from-paths /catkin_ws/src/${pkg.getName()}
                             """
             )
