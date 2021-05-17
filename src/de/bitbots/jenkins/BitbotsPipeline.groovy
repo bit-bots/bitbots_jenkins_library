@@ -156,7 +156,11 @@ spec:
                 }
 
                 // execute actual package builds
-                this.steps.parallel(buildClosures)
+                //this.steps.parallel(buildClosures)
+                for (key in this.buildClosures.keySet()) {
+                    this.steps.echo "Executing closure ${key}"
+                    this.buildClosures[key]()
+                }
             }
         }
     }
