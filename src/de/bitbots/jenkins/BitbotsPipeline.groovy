@@ -10,7 +10,18 @@ class BitbotsPipeline implements Serializable {
     def checkoutVars
     Boolean restrictPublishingToMainBranch
 
-    final Map<String, Closure> buildClosures
+    /**
+     * The list of packages for which this pipeline is configured
+     *
+     * It is needed in addition to buildClosures so that workspace setup tasks can be done before the actual build
+     * which is necessary to prevent issues of parallel execution.
+     */
+    final List<PackagePipelineSettings> packages
+
+    /**
+     * Map of package names to closures which build them
+     */
+    private Map<String, Closure> buildClosures
 
     private class GithubInfo {
         public final String owner
@@ -41,7 +52,8 @@ class BitbotsPipeline implements Serializable {
         this.scm = scm
         this.restrictPublishingToMainBranch = restrictPublishingToMainBranch
 
-        this.buildClosures = new HashMap()
+        this.packages = new LinkedList()
+        this.buildClosures = new HashMap<String, Closure>()
     }
 
     /**
@@ -51,6 +63,8 @@ class BitbotsPipeline implements Serializable {
      * Call {@link #execute()} to execute the pipeline for all configured packages.
      */
     void configurePipelineForPackage(PackagePipelineSettings pkgSettings) {
+        this.packages.add(pkgSettings)
+
         this.buildClosures.put(pkgSettings.getPkg().getName(), {
             this.steps.catchError(message: "Pipeline for ${pkgSettings.getPkg().getName()} failed", buildResult: "FAILURE", stageResult: "FAILURE") {
                 // compilation
@@ -58,8 +72,6 @@ class BitbotsPipeline implements Serializable {
                     this.imperativeWhen(pkgSettings.getDoBuild()) {
                         this.inBuildContainer {
                             this.steps.timeout(30) {
-                                this.linkCatkinWorkspace(pkgSettings.getPkg())
-                                this.installRosdeps(pkgSettings.getPkg())
                                 this.catkinBuild(pkgSettings.getPkg())
                             }
                         }
@@ -71,8 +83,6 @@ class BitbotsPipeline implements Serializable {
                     this.imperativeWhen(pkgSettings.getDoDocument()) {
                         this.inBuildContainer {
                             this.steps.timeout(10) {
-                                this.linkCatkinWorkspace(pkgSettings.getPkg())
-                                this.installRosdeps(pkgSettings.getPkg())
                                 this.catkinBuild(pkgSettings.getPkg(), "Documentation")
                                 this.steps.dir(this.env.WORKSPACE) {
                                     def includes
@@ -129,20 +139,24 @@ spec:
       - cat
 """) {
             this.steps.node(this.env.POD_LABEL) {
-                this.steps.stage("Pre: Checkout") {
+                // setup workspace
+                this.steps.stage("Pre: Workspace Setup") {
                     this.inBuildContainer {
                         this.checkoutVars = this.steps.checkout(this.scm)
-                    }
-                }
-
-                this.steps.stage("Pre: Update Rosdeps") {
-                    this.inBuildContainer {
                         this.updateRosdeps()
+                        for (pkgSettings in this.packages) {
+                            this.linkCatkinWorkspace(pkgSettings.getPkg())
+                        }
+                        for (pkgSettings in this.packages) {
+                            if (pkgSettings.getDoBuild()) {
+                                this.installRosdeps(pkgSettings.getPkg())
+                            }
+                        }
                     }
                 }
 
-                // package pipeline execution
-                this.steps.parallel(this.buildClosures)
+                // execute actual package builds
+                this.steps.parallel(buildClosures)
             }
         }
     }
