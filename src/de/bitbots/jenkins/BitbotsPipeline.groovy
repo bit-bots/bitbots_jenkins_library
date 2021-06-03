@@ -83,7 +83,7 @@ class BitbotsPipeline implements Serializable {
                     this.imperativeWhen(pkgSettings.getDoDocument()) {
                         this.inBuildContainer {
                             this.steps.timeout(10) {
-                                this.catkinBuild(pkgSettings.getPkg(), "Documentation")
+                                this.catkinBuild(pkgSettings.getPkg(), "Documentation", "default", false)
                                 this.steps.dir(this.env.WORKSPACE) {
                                     def includes
                                     if (pkgSettings.getPkg().getRelativePath().equals(".")) {
@@ -225,8 +225,12 @@ spec:
         }
     }
 
-    private void catkinBuild(PackageDefinition pkg, String makeArgs = "", String profile = "default") {
+    private void catkinBuild(PackageDefinition pkg, String makeArgs = "", String profile = "default", boolean withDeps = true) {
         def cmd = "catkin build -w /catkin_ws --profile ${profile} --no-status --summarize ${pkg.getName()}"
+
+        if (!withDeps) {
+            cmd += " --no-deps"
+        }
 
         if (!makeArgs.equals("")) {
             cmd += " --make-args ${makeArgs}"
